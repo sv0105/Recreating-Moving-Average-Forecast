@@ -1,0 +1,54 @@
+# Recreation of Fig.5.2.
+library(zoo)
+ma.trailing <- rollmean(tradebalance.ts, k = 24, align = "right")
+ma.centered <- ma(tradebalance.ts, order = 24)
+plot(tradebalance.ts, ylim = c(-2500, 0),  ylab = 'Indian Trade Balance', xlab = 'Date', 
+     bty = "l", lwd = 2, xaxt = "n", xlim = c(1990, 2023), main = 'Moving Averages',)
+axis(1, at = seq(1990,2024, 1), labels = format(seq(1990, 2024, 1)))
+lines(ma.centered, lwd = 3, lty = 2, col = 'red')
+lines(ma.trailing, lwd = 3, lty = 3, col = 'blue')
+legend(1994,-1000, c("Raw Data","Centered Moving Average", "Trailing Moving Average"), lty=c(1,2,3), lwd=c(2,2,2), bty = "n")  
+
+# Recreation of Fig.5.3.
+nValid <- 60
+nTrain <- length(tradebalance.ts) - nValid
+train.ts <- window(tradebalance.ts, start = c(1990, 2), end = c(1990, nTrain))
+valid.ts <- window(tradebalance.ts, start = c(1990, nTrain + 1), end = c(1990, nTrain + nValid), freq = 12)
+ma.trailing <- rollmean(train.ts, k = 60, align = "right")
+last.ma <- tail(ma.trailing, 1)
+ma.trailing.pred <- ts(rep(last.ma, nValid), start = c(1990, nTrain + 1), 
+                       end = c(1990, nTrain + nValid), freq = 12)
+plot(train.ts, ylim = c(-2500, 0),  ylab = 'Trade Balance', xlab = 'Date',
+     lwd = 2, bty = "l", xaxt = "n", xlim = c(1990, 2030), main = 'Moving Average Forecast')
+axis(1, at = seq(1990, 2030, 10), labels = format(seq(1990, 2030, 10)))
+lines(ma.trailing, lwd = 2, col = 'red') 
+lines(ma.trailing.pred, lwd = 2, col = "blue", lty = 2) 
+lines(valid.ts, lwd = 2)
+lines(c(2022 - nValid/12, 2022 - nValid/12), c(-2500, 0)) 
+lines(c(2022, 2022), c(-2500, 0))
+text(2000, -1000, "Training")
+text(2020, -1500, "Validation")
+text(2025, -2000, "Future")
+arrows(1990, -1100, 2022 - nValid/12, -1100, code = 3, length = 0.1, lwd = 1,angle = 25)
+arrows(2022 - nValid/12, -1600, 2022, -1600, code = 3, length = 0.1, lwd = 1,angle = 25)
+arrows(2022, -2100, 2022 + nValid/12, -2100, code = 3, length = 0.1, lwd = 1,angle = 25)
+
+# Recreation of fig.5.6
+hwin <- ets(train.ts, model = "AAN")
+hwin.pred <- forecast(hwin, h = nValid, level = 0) 
+
+plot(hwin.pred, ylim = c(-1100, 0),  ylab = "Trade Balance", xlab = "Date", bty = "l", xaxt = "n", xlim = c(1990,2028), lwd= 2, main = 'Exponential Smoothing Forecast', flty = 2)
+axis(1, at = seq(1990, 2030, 1), labels = format(seq(1990, 2030, 1)))
+lines(hwin.pred$fitted, lwd = 1, col = "red")
+lines(valid.ts, lwd = 2)
+lines(c(2023 - nValid/12, 2023 - nValid/12), c(-1100, 00)) 
+lines(c(2023, 2023), c(-1100, 0))
+text(2004, -400, "Training")
+text(2023 - nValid/12/2, -200, "Validation")
+text(2023 + 3, -1000, "Future")
+arrows(1990, -440, 2023 - nValid/12, -440, code = 3, length = 0.1, lwd = 1,angle = 25)
+arrows(2023 - nValid/12, -240, 2023, -240, code = 3, length = 0.1, lwd = 1,angle = 25)
+arrows(2023, -1040, 2023 + nValid/12, -1040, code = 3, length = 0.1, lwd = 1,angle = 25)
+
+accuracy(hwin.pred)
+accuracy(ma.trailing.pred,valid.ts)
